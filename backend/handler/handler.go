@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -42,21 +43,21 @@ type registerResponse struct {
 }
 
 type getUserItemsResponse struct {
-	ID           int32  `json:"id"`
+	ID           int64  `json:"id"`
 	Name         string `json:"name"`
 	Price        int64  `json:"price"`
 	CategoryName string `json:"category_name"`
 }
 
 type getOnSaleItemsResponse struct {
-	ID           int32  `json:"id"`
+	ID           int64  `json:"id"`
 	Name         string `json:"name"`
 	Price        int64  `json:"price"`
 	CategoryName string `json:"category_name"`
 }
 
 type getItemResponse struct {
-	ID           int32             `json:"id"`
+	ID           int64             `json:"id"`
 	Name         string            `json:"name"`
 	CategoryID   int64             `json:"category_id"`
 	CategoryName string            `json:"category_name"`
@@ -72,7 +73,7 @@ type getCategoriesResponse struct {
 }
 
 type sellRequest struct {
-	ItemID int32 `json:"item_id"`
+	ItemID int64 `json:"item_id"`
 }
 
 type addItemRequest struct {
@@ -223,7 +224,11 @@ func (h *Handler) AddItem(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	defer src.Close()
+	defer func() {
+		if err := src.Close(); err != nil {
+			log.Printf("failed src.Close: %s", err.Error())
+		}
+	}()
 
 	var dest []byte
 	blob := bytes.NewBuffer(dest)
@@ -312,12 +317,12 @@ func (h *Handler) GetOnSaleItems(c echo.Context) error {
 func (h *Handler) GetItem(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	itemID, err := strconv.Atoi(c.Param("itemID"))
+	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	item, err := h.ItemRepo.GetItem(ctx, int32(itemID))
+	item, err := h.ItemRepo.GetItem(ctx, itemID)
 	// TODO: not found handling
 	// http.StatusNotFound(404)
 	if err != nil {
@@ -393,13 +398,12 @@ func (h *Handler) GetImage(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	// TODO: overflow
-	itemID, err := strconv.Atoi(c.Param("itemID"))
+	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "invalid itemID type")
 	}
 
-	// オーバーフローしていると。ここのint32(itemID)がバグって正常に処理ができないはず
-	data, err := h.ItemRepo.GetItemImage(ctx, int32(itemID))
+	data, err := h.ItemRepo.GetItemImage(ctx, itemID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -467,7 +471,7 @@ func (h *Handler) Purchase(c echo.Context) error {
 	}
 
 	// TODO: overflow
-	itemID, err := strconv.Atoi(c.Param("itemID"))
+	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -475,8 +479,7 @@ func (h *Handler) Purchase(c echo.Context) error {
 	// TODO: update only when item status is on sale
 	// http.StatusPreconditionFailed(412)
 
-	// オーバーフローしていると。ここのint32(itemID)がバグって正常に処理ができないはず
-	if err := h.ItemRepo.UpdateItemStatus(ctx, int32(itemID), domain.ItemStatusSoldOut); err != nil {
+	if err := h.ItemRepo.UpdateItemStatus(ctx, itemID, domain.ItemStatusSoldOut); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -487,7 +490,7 @@ func (h *Handler) Purchase(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	item, err := h.ItemRepo.GetItem(ctx, int32(itemID))
+	item, err := h.ItemRepo.GetItem(ctx, itemID)
 	// TODO: not found handling
 	// http.StatusPreconditionFailed(412)
 	if err != nil {

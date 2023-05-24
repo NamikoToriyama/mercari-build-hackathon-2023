@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 
 	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/db"
@@ -36,7 +38,11 @@ func run(ctx context.Context) int {
 	if logfile == "" {
 		logfile = "access.log"
 	}
-	lf, _ := os.OpenFile(logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	lf, err := os.OpenFile(filepath.Clean(logfile), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+	if err != nil {
+		log.Printf("failed os.OpenFile: %s", err.Error())
+		return 1
+	}
 	logger := middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: logFormat(),
 		Output: io.MultiWriter(os.Stdout, lf),
@@ -67,7 +73,11 @@ func run(ctx context.Context) int {
 		fmt.Fprintf(os.Stderr, "failed to prepare DB: %s\n", err)
 		return exitError
 	}
-	defer sqlDB.Close()
+	defer func() {
+		if err := sqlDB.Close(); err != nil {
+			log.Printf("failed sqlDB.Close: %s", err.Error())
+		}
+	}()
 
 	h := handler.Handler{
 		DB:       sqlDB,

@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"log"
 
 	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/domain"
 )
@@ -50,13 +51,13 @@ func (r *UserDBRepository) UpdateBalance(ctx context.Context, id int64, balance 
 
 type ItemRepository interface {
 	AddItem(ctx context.Context, item domain.Item) (domain.Item, error)
-	GetItem(ctx context.Context, id int32) (domain.Item, error)
-	GetItemImage(ctx context.Context, id int32) ([]byte, error)
+	GetItem(ctx context.Context, id int64) (domain.Item, error)
+	GetItemImage(ctx context.Context, id int64) ([]byte, error)
 	GetOnSaleItems(ctx context.Context) ([]domain.Item, error)
 	GetItemsByUserID(ctx context.Context, userID int64) ([]domain.Item, error)
 	GetCategory(ctx context.Context, id int64) (domain.Category, error)
 	GetCategories(ctx context.Context) ([]domain.Category, error)
-	UpdateItemStatus(ctx context.Context, id int32, status domain.ItemStatus) error
+	UpdateItemStatus(ctx context.Context, id int64, status domain.ItemStatus) error
 }
 
 type ItemDBRepository struct {
@@ -79,14 +80,14 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item) (domai
 	return res, row.Scan(&res.ID, &res.Name, &res.Price, &res.Description, &res.CategoryID, &res.UserID, &res.Image, &res.Status, &res.CreatedAt, &res.UpdatedAt)
 }
 
-func (r *ItemDBRepository) GetItem(ctx context.Context, id int32) (domain.Item, error) {
+func (r *ItemDBRepository) GetItem(ctx context.Context, id int64) (domain.Item, error) {
 	row := r.QueryRowContext(ctx, "SELECT * FROM items WHERE id = ?", id)
 
 	var item domain.Item
 	return item, row.Scan(&item.ID, &item.Name, &item.Price, &item.Description, &item.CategoryID, &item.UserID, &item.Image, &item.Status, &item.CreatedAt, &item.UpdatedAt)
 }
 
-func (r *ItemDBRepository) GetItemImage(ctx context.Context, id int32) ([]byte, error) {
+func (r *ItemDBRepository) GetItemImage(ctx context.Context, id int64) ([]byte, error) {
 	row := r.QueryRowContext(ctx, "SELECT image FROM items WHERE id = ?", id)
 	var image []byte
 	return image, row.Scan(&image)
@@ -97,7 +98,11 @@ func (r *ItemDBRepository) GetOnSaleItems(ctx context.Context) ([]domain.Item, e
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed rows.Close: %s", err.Error())
+		}
+	}()
 
 	var items []domain.Item
 	for rows.Next() {
@@ -118,7 +123,11 @@ func (r *ItemDBRepository) GetItemsByUserID(ctx context.Context, userID int64) (
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed rows.Close: %s", err.Error())
+		}
+	}()
 
 	var items []domain.Item
 	for rows.Next() {
@@ -134,7 +143,7 @@ func (r *ItemDBRepository) GetItemsByUserID(ctx context.Context, userID int64) (
 	return items, nil
 }
 
-func (r *ItemDBRepository) UpdateItemStatus(ctx context.Context, id int32, status domain.ItemStatus) error {
+func (r *ItemDBRepository) UpdateItemStatus(ctx context.Context, id int64, status domain.ItemStatus) error {
 	if _, err := r.ExecContext(ctx, "UPDATE items SET status = ? WHERE id = ?", status, id); err != nil {
 		return err
 	}
@@ -153,7 +162,11 @@ func (r *ItemDBRepository) GetCategories(ctx context.Context) ([]domain.Category
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed rows.Close: %s", err.Error())
+		}
+	}()
 
 	var cats []domain.Category
 	for rows.Next() {

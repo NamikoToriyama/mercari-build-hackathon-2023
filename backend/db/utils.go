@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -36,7 +37,7 @@ func Initialize(ctx context.Context, db *sql.DB) error {
 	sort.Slice(paths, func(i, j int) bool { return paths[i] < paths[j] })
 	for _, path := range paths {
 		log.Printf("Load sql file: %s\n", path)
-		f, err := os.ReadFile(path)
+		f, err := os.ReadFile(filepath.Clean(path))
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf("Failed to load sql: %s", path))
 		}
@@ -68,18 +69,31 @@ func putDataSql() error {
 	return nil
 }
 
-func download(filepath string, url string) error {
-	resp, err := http.Get(url)
+func download(filePath string, urlStr string) error {
+	u, err := url.Parse(urlStr)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
-	out, err := os.Create(filepath)
+	resp, err := http.Get(u.String())
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Printf("failed resp.Body.Close: %s", err.Error())
+		}
+	}()
+
+	out, err := os.Create(filepath.Clean(filePath))
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := out.Close(); err != nil {
+			log.Printf("failed out.Close: %s", err.Error())
+		}
+	}()
 
 	_, err = io.Copy(out, resp.Body)
 	return err

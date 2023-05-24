@@ -9,7 +9,7 @@ const (
 )
 
 type Item struct {
-	ID          int32
+	ID          int64
 	Name        string
 	Price       int64
 	Description string
