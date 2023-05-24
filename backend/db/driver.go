@@ -25,7 +25,7 @@ func PrepareDB(ctx context.Context) (*sql.DB, error) {
 		return nil, errors.Wrap(err, "failed to ping DB: %w")
 	}
 
-	f, err := os.ReadFile(filepath.Join(path, "sql", "01_schema.sql"))
+	f, err := os.ReadFile(filepath.Clean(filepath.Join(path, "sql", "01_schema.sql")))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open schema.sql %w")
 	}
