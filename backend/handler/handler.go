@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/labstack/echo/v4"
 	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/db"
 	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/domain"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -90,7 +90,7 @@ type addBalanceRequest struct {
 	Balance int64 `json:"balance"`
 }
 
-type getBalanceResponse struct {
+type GetBalanceResponse struct {
 	Balance int64 `json:"balance"`
 }
 
@@ -446,10 +446,13 @@ func (h *Handler) GetBalance(c echo.Context) error {
 	// TODO: not found handling
 	// http.StatusPreconditionFailed(412)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, err.Error())
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, getBalanceResponse{Balance: user.Balance})
+	return c.JSON(http.StatusOK, GetBalanceResponse{Balance: user.Balance})
 }
 
 func (h *Handler) Purchase(c echo.Context) error {
@@ -513,11 +516,15 @@ func (h *Handler) Purchase(c echo.Context) error {
 
 func getUserID(c echo.Context) (int64, error) {
 	user := c.Get("user").(*jwt.Token)
+	// use same error for security reason
 	if user == nil {
 		return -1, fmt.Errorf("invalid token")
 	}
 	claims := user.Claims.(*JwtCustomClaims)
 	if claims == nil {
+		return -1, fmt.Errorf("invalid token")
+	}
+	if claims.UserID < 0 {
 		return -1, fmt.Errorf("invalid token")
 	}
 
