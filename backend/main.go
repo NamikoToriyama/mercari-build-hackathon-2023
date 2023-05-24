@@ -9,12 +9,12 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/db"
+	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/handler"
 	"github.com/golang-jwt/jwt/v5"
 	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/db"
-	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/handler"
 )
 
 const (
