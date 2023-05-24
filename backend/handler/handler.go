@@ -86,7 +86,7 @@ type addItemResponse struct {
 	ID int64 `json:"id"`
 }
 
-type addBalanceRequest struct {
+type AddBalanceRequest struct {
 	Balance int64 `json:"balance"`
 }
 
@@ -410,9 +410,13 @@ func (h *Handler) GetImage(c echo.Context) error {
 func (h *Handler) AddBalance(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	req := new(addBalanceRequest)
+	// validation
+	req := new(AddBalanceRequest)
 	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+	if req.Balance <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("negative added balance is invalid: %d", req.Balance))
 	}
 
 	userID, err := getUserID(c)
@@ -421,9 +425,10 @@ func (h *Handler) AddBalance(c echo.Context) error {
 	}
 
 	user, err := h.UserRepo.GetUser(ctx, userID)
-	// TODO: not found handling
-	// http.StatusPreconditionFailed(412)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, err.Error())
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
@@ -443,8 +448,6 @@ func (h *Handler) GetBalance(c echo.Context) error {
 	}
 
 	user, err := h.UserRepo.GetUser(ctx, userID)
-	// TODO: not found handling
-	// http.StatusPreconditionFailed(412)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return echo.NewHTTPError(http.StatusPreconditionFailed, err.Error())
