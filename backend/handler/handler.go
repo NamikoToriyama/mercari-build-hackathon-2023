@@ -415,7 +415,6 @@ func (h *Handler) SearchItems(c echo.Context) error {
 
 	// get search word
 	searchWord := c.Request().URL.Query().Get("name")
-	fmt.Println(searchWord)
 	if searchWord == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "please specified search word")
 	}
