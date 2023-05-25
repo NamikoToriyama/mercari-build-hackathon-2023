@@ -45,7 +45,7 @@ func ConvertToGetItemResponse(items []Item, categoryName string) []GetItemRespon
 			ID:           d.ID,
 			Name:         d.Name,
 			CategoryID:   d.CategoryID,
-			CategoryName: "",
+			CategoryName: categoryName,
 			UserID:       d.UserID,
 			Price:        d.Price,
 			Description:  d.Description,
