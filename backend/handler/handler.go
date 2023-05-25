@@ -56,17 +56,6 @@ type getOnSaleItemsResponse struct {
 	CategoryName string `json:"category_name"`
 }
 
-type getItemResponse struct {
-	ID           int64             `json:"id"`
-	Name         string            `json:"name"`
-	CategoryID   int64             `json:"category_id"`
-	CategoryName string            `json:"category_name"`
-	UserID       int64             `json:"user_id"`
-	Price        int64             `json:"price"`
-	Description  string            `json:"description"`
-	Status       domain.ItemStatus `json:"status"`
-}
-
 type getCategoriesResponse struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
@@ -329,20 +318,8 @@ func (h *Handler) GetItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	category, err := h.ItemRepo.GetCategory(ctx, item.CategoryID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-	return c.JSON(http.StatusOK, getItemResponse{
-		ID:           item.ID,
-		Name:         item.Name,
-		CategoryID:   item.CategoryID,
-		CategoryName: category.Name,
-		UserID:       item.UserID,
-		Price:        item.Price,
-		Description:  item.Description,
-		Status:       item.Status,
-	})
+	res := item.ConvertToGetItemResponse()
+	return c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) GetUserItems(c echo.Context) error {
@@ -419,12 +396,17 @@ func (h *Handler) SearchItems(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "please specified search word")
 	}
 
-	data, err := h.ItemRepo.SearchItemsByWord(ctx, searchWord)
+	items, err := h.ItemRepo.SearchItemsByWord(ctx, searchWord)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, data)
+	res := make([]domain.GetItemResponse, len(items))
+	for i, item := range items {
+		res[i] = item.ConvertToGetItemResponse()
+	}
+
+	return c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) AddBalance(c echo.Context) error {
