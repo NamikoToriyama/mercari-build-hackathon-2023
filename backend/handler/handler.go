@@ -56,17 +56,6 @@ type getOnSaleItemsResponse struct {
 	CategoryName string `json:"category_name"`
 }
 
-type getItemResponse struct {
-	ID           int64             `json:"id"`
-	Name         string            `json:"name"`
-	CategoryID   int64             `json:"category_id"`
-	CategoryName string            `json:"category_name"`
-	UserID       int64             `json:"user_id"`
-	Price        int64             `json:"price"`
-	Description  string            `json:"description"`
-	Status       domain.ItemStatus `json:"status"`
-}
-
 type getCategoriesResponse struct {
 	ID   int64  `json:"id"`
 	Name string `json:"name"`
@@ -333,16 +322,9 @@ func (h *Handler) GetItem(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-	return c.JSON(http.StatusOK, getItemResponse{
-		ID:           item.ID,
-		Name:         item.Name,
-		CategoryID:   item.CategoryID,
-		CategoryName: category.Name,
-		UserID:       item.UserID,
-		Price:        item.Price,
-		Description:  item.Description,
-		Status:       item.Status,
-	})
+
+	res := domain.ConvertToGetItemResponse([]domain.Item{item}, category.Name)
+	return c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) GetUserItems(c echo.Context) error {
@@ -424,20 +406,7 @@ func (h *Handler) SearchItems(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	res := make([]getItemResponse, len(items))
-
-	for i, d := range items {
-		res[i] = getItemResponse{
-			ID:           d.ID,
-			Name:         d.Name,
-			CategoryID:   d.CategoryID,
-			CategoryName: "",
-			UserID:       d.UserID,
-			Price:        d.Price,
-			Description:  d.Description,
-			Status:       d.Status,
-		}
-	}
+	res := domain.ConvertToGetItemResponse(items, "")
 
 	return c.JSON(http.StatusOK, res)
 }
