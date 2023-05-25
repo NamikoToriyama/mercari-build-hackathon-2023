@@ -412,7 +412,7 @@ func TestSearchItems(t *testing.T) {
 						Name:        "item1",
 						Price:       0,
 						Description: "",
-						CategoryID:  0,
+						CategoryID:  1,
 						UserID:      0,
 						Image:       []byte{},
 						Status:      0,
@@ -424,7 +424,7 @@ func TestSearchItems(t *testing.T) {
 						Name:        "apple_item",
 						Price:       0,
 						Description: "",
-						CategoryID:  0,
+						CategoryID:  1,
 						UserID:      0,
 						Image:       []byte{},
 						Status:      0,
@@ -438,9 +438,7 @@ func TestSearchItems(t *testing.T) {
 		"200: no items": {
 			url: "/search?name=ok",
 			injectorForItemRepo: func(m *db.MockItemRepository) {
-				m.EXPECT().SearchItemsByWord(gomock.Any(), "ok").Return([]domain.Item{
-					{},
-				}, nil).Times(1)
+				m.EXPECT().SearchItemsByWord(gomock.Any(), "ok").Return([]domain.Item{}, nil).Times(1)
 			},
 			wantStatusCode: http.StatusOK,
 		},

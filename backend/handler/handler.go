@@ -318,12 +318,7 @@ func (h *Handler) GetItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	category, err := h.ItemRepo.GetCategory(ctx, item.CategoryID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	res := item.ConvertToGetItemResponse(category.Name)
+	res := item.ConvertToGetItemResponse()
 	return c.JSON(http.StatusOK, res)
 }
 
@@ -408,7 +403,7 @@ func (h *Handler) SearchItems(c echo.Context) error {
 
 	res := make([]domain.GetItemResponse, len(items))
 	for i, item := range items {
-		res[i] = item.ConvertToGetItemResponse("")
+		res[i] = item.ConvertToGetItemResponse()
 	}
 
 	return c.JSON(http.StatusOK, res)
