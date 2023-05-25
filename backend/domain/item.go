@@ -37,20 +37,15 @@ type Category struct {
 	Name string
 }
 
-func ConvertToGetItemResponse(items []Item, categoryName string) []GetItemResponse {
-	res := make([]GetItemResponse, len(items))
-
-	for i, d := range items {
-		res[i] = GetItemResponse{
-			ID:           d.ID,
-			Name:         d.Name,
-			CategoryID:   d.CategoryID,
-			CategoryName: categoryName,
-			UserID:       d.UserID,
-			Price:        d.Price,
-			Description:  d.Description,
-			Status:       d.Status,
-		}
+func (i *Item) ConvertToGetItemResponse(categoryName string) GetItemResponse {
+	return GetItemResponse{
+		ID:           i.ID,
+		Name:         i.Name,
+		CategoryID:   i.CategoryID,
+		CategoryName: categoryName,
+		UserID:       i.UserID,
+		Price:        i.Price,
+		Description:  i.Description,
+		Status:       i.Status,
 	}
-	return res
 }
