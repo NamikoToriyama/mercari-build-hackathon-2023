@@ -65,7 +65,7 @@ type sellRequest struct {
 	ItemID int64 `json:"item_id"`
 }
 
-type addItemRequest struct {
+type itemRequest struct {
 	Name        string `form:"name"`
 	CategoryID  int64  `form:"category_id"`
 	Price       int64  `form:"price"`
@@ -191,11 +191,9 @@ func (h *Handler) Login(c echo.Context) error {
 }
 
 func (h *Handler) AddItem(c echo.Context) error {
-	// TODO: validation
-	// http.StatusBadRequest(400)
 	ctx := c.Request().Context()
 
-	req := new(addItemRequest)
+	req := new(itemRequest)
 	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
@@ -204,14 +202,91 @@ func (h *Handler) AddItem(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, err)
 	}
-	file, err := c.FormFile("image")
+
+	_, err = h.ItemRepo.GetCategory(ctx, req.CategoryID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid categoryID")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	imageByte, err := getImageByte(c)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	src, err := file.Open()
+	item, err := h.ItemRepo.AddItem(c.Request().Context(), domain.Item{
+		Name:        req.Name,
+		CategoryID:  req.CategoryID,
+		UserID:      userID,
+		Price:       req.Price,
+		Description: req.Description,
+		Image:       imageByte,
+		Status:      domain.ItemStatusInitial,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, addItemResponse{ID: int64(item.ID)})
+}
+
+func (h *Handler) UpdateItem(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	req := new(itemRequest)
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err)
+	}
+
+	_, err = getUserID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, err)
+	}
+
+	_, err = h.ItemRepo.GetCategory(ctx, req.CategoryID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return echo.NewHTTPError(http.StatusBadRequest, "invalid categoryID")
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	imageByte, err := getImageByte(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	item, err := h.ItemRepo.UpdateItem(c.Request().Context(), domain.Item{
+		ID:          itemID,
+		Name:        req.Name,
+		CategoryID:  req.CategoryID,
+		Price:       req.Price,
+		Description: req.Description,
+		Image:       imageByte,
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, item.ConvertToGetItemResponse())
+}
+
+func getImageByte(c echo.Context) ([]byte, error) {
+	file, err := c.FormFile("image")
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return nil, err
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
@@ -224,31 +299,9 @@ func (h *Handler) AddItem(c echo.Context) error {
 	// TODO: pass very big file
 	// http.StatusBadRequest(400)
 	if _, err := io.Copy(blob, src); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return nil, err
 	}
-
-	_, err = h.ItemRepo.GetCategory(ctx, req.CategoryID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return echo.NewHTTPError(http.StatusBadRequest, "invalid categoryID")
-		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	item, err := h.ItemRepo.AddItem(c.Request().Context(), domain.Item{
-		Name:        req.Name,
-		CategoryID:  req.CategoryID,
-		UserID:      userID,
-		Price:       req.Price,
-		Description: req.Description,
-		Image:       blob.Bytes(),
-		Status:      domain.ItemStatusInitial,
-	})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	return c.JSON(http.StatusOK, addItemResponse{ID: int64(item.ID)})
+	return blob.Bytes(), nil
 }
 
 func (h *Handler) Sell(c echo.Context) error {

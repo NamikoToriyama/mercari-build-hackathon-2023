@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/domain"
@@ -51,6 +52,7 @@ func (r *UserDBRepository) UpdateBalance(ctx context.Context, id int64, balance 
 
 type ItemRepository interface {
 	AddItem(ctx context.Context, item domain.Item) (domain.Item, error)
+	UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error)
 	GetItem(ctx context.Context, id int64) (domain.Item, error)
 	GetItemImage(ctx context.Context, id int64) ([]byte, error)
 	GetOnSaleItems(ctx context.Context) ([]domain.Item, error)
@@ -79,6 +81,14 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item) (domai
 
 	var res domain.Item
 	return res, row.Scan(&res.ID, &res.Name, &res.Price, &res.Description, &res.CategoryID, &res.UserID, &res.Image, &res.Status, &res.CreatedAt, &res.UpdatedAt)
+}
+
+func (r *ItemDBRepository) UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error) {
+	if _, err := r.ExecContext(ctx, "UPDATE items SET name = ?  WHERE id = ?", item.Name, item.ID); err != nil {
+		return domain.Item{}, err
+	}
+
+	return r.GetItem(ctx, item.ID)
 }
 
 func (r *ItemDBRepository) GetItem(ctx context.Context, id int64) (domain.Item, error) {
@@ -145,6 +155,7 @@ func (r *ItemDBRepository) GetItemsByUserID(ctx context.Context, userID int64) (
 }
 
 func (r *ItemDBRepository) UpdateItemStatus(ctx context.Context, id int64, status domain.ItemStatus) error {
+	fmt.Print("hogehogehoge")
 	if _, err := r.ExecContext(ctx, "UPDATE items SET status = ? WHERE id = ?", status, id); err != nil {
 		return err
 	}
