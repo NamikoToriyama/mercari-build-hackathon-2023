@@ -397,7 +397,6 @@ func (h *Handler) GetCategories(c echo.Context) error {
 func (h *Handler) GetImage(c echo.Context) error {
 	ctx := c.Request().Context()
 
-	// TODO: overflow
 	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "invalid itemID type")
@@ -470,49 +469,61 @@ func (h *Handler) Purchase(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, err)
 	}
 
-	// TODO: overflow
 	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	// TODO: update only when item status is on sale
-	// http.StatusPreconditionFailed(412)
-
-	if err := h.ItemRepo.UpdateItemStatus(ctx, itemID, domain.ItemStatusSoldOut); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
-	}
-
-	user, err := h.UserRepo.GetUser(ctx, userID)
-	// TODO: not found handling
-	// http.StatusPreconditionFailed(412)
+	// TODO: use transaction
+	buyer, err := h.UserRepo.GetUser(ctx, userID)
 	if err != nil {
+		// not found handling
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, err)
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	// TODO: this request can be reduced by updating UpdateItemStatus
+	// e.g.) UpdateItemStatusIfOnSale, UpdateItemStatus(context, itemID, beforeCondition, afterCondition)
 	item, err := h.ItemRepo.GetItem(ctx, itemID)
-	// TODO: not found handling
-	// http.StatusPreconditionFailed(412)
 	if err != nil {
+		// not found handling
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, err)
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
-
-	// TODO: if it is fail here, item status is still sold
-	// TODO: balance consistency
-	// TODO: not to buy own items. 自身の商品を買おうとしていたら、http.StatusPreconditionFailed(412)
-	if err := h.UserRepo.UpdateBalance(ctx, userID, user.Balance-item.Price); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	// update only when item status is on sale
+	if item.Status != domain.ItemStatusOnSale {
+		return echo.NewHTTPError(http.StatusPreconditionFailed, fmt.Errorf("item is not on sale"))
+	}
+	// not to buy own items. 自身の商品を買おうとしていたら、http.StatusPreconditionFailed(412)
+	if buyer.ID == item.UserID {
+		return echo.NewHTTPError(http.StatusPreconditionFailed, fmt.Errorf("failed to buy because of user owned item"))
 	}
 
 	sellerID := item.UserID
-
 	seller, err := h.UserRepo.GetUser(ctx, sellerID)
-	// TODO: not found handling
-	// http.StatusPreconditionFailed(412)
 	if err != nil {
+		// not found handling
+		if errors.Is(err, sql.ErrNoRows) {
+			return echo.NewHTTPError(http.StatusPreconditionFailed, err)
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	// if it is fail here, item status is still sold
+	// balance consistency
+	if buyer.Balance-item.Price < 0 {
+		return echo.NewHTTPError(http.StatusPreconditionFailed, fmt.Errorf("failed to buy because of lack of balances: balance: %d, price: %d", buyer.Balance, item.Price))
+	}
+	if err := h.ItemRepo.UpdateItemStatus(ctx, itemID, domain.ItemStatusSoldOut); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+	if err := h.UserRepo.UpdateBalance(ctx, userID, buyer.Balance-item.Price); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
 	if err := h.UserRepo.UpdateBalance(ctx, sellerID, seller.Balance+item.Price); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
