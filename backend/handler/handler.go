@@ -419,14 +419,15 @@ func (h *Handler) SearchItems(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "please specified search word")
 	}
 
-	data, err := h.ItemRepo.SearchItemsByWord(ctx, searchWord)
+	items, err := h.ItemRepo.SearchItemsByWord(ctx, searchWord)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	itemResp := []getItemResponse{}
-	for _, d := range data {
-		itemResp = append(itemResp, getItemResponse{
+	res := make([]getItemResponse, len(items))
+
+	for i, d := range items {
+		res[i] = getItemResponse{
 			ID:           d.ID,
 			Name:         d.Name,
 			CategoryID:   d.CategoryID,
@@ -435,10 +436,10 @@ func (h *Handler) SearchItems(c echo.Context) error {
 			Price:        d.Price,
 			Description:  d.Description,
 			Status:       d.Status,
-		})
+		}
 	}
 
-	return c.JSON(http.StatusOK, itemResp)
+	return c.JSON(http.StatusOK, res)
 }
 
 func (h *Handler) AddBalance(c echo.Context) error {
