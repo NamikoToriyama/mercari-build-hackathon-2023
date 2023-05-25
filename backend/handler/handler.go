@@ -424,7 +424,21 @@ func (h *Handler) SearchItems(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	return c.JSON(http.StatusOK, data)
+	itemResp := []getItemResponse{}
+	for _, d := range data {
+		itemResp = append(itemResp, getItemResponse{
+			ID:           d.ID,
+			Name:         d.Name,
+			CategoryID:   d.CategoryID,
+			CategoryName: "",
+			UserID:       d.UserID,
+			Price:        d.Price,
+			Description:  d.Description,
+			Status:       d.Status,
+		})
+	}
+
+	return c.JSON(http.StatusOK, itemResp)
 }
 
 func (h *Handler) AddBalance(c echo.Context) error {
