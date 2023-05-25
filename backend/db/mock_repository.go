@@ -148,7 +148,7 @@ func (mr *MockItemRepositoryMockRecorder) GetCategory(ctx, id interface{}) *gomo
 }
 
 // GetItem mocks base method.
-func (m *MockItemRepository) GetItem(ctx context.Context, id int32) (domain.Item, error) {
+func (m *MockItemRepository) GetItem(ctx context.Context, id int64) (domain.Item, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItem", ctx, id)
 	ret0, _ := ret[0].(domain.Item)
@@ -163,7 +163,7 @@ func (mr *MockItemRepositoryMockRecorder) GetItem(ctx, id interface{}) *gomock.C
 }
 
 // GetItemImage mocks base method.
-func (m *MockItemRepository) GetItemImage(ctx context.Context, id int32) ([]byte, error) {
+func (m *MockItemRepository) GetItemImage(ctx context.Context, id int64) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetItemImage", ctx, id)
 	ret0, _ := ret[0].([]byte)
@@ -208,7 +208,7 @@ func (mr *MockItemRepositoryMockRecorder) GetOnSaleItems(ctx interface{}) *gomoc
 }
 
 // UpdateItemStatus mocks base method.
-func (m *MockItemRepository) UpdateItemStatus(ctx context.Context, id int32, status domain.ItemStatus) error {
+func (m *MockItemRepository) UpdateItemStatus(ctx context.Context, id int64, status domain.ItemStatus) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateItemStatus", ctx, id, status)
 	ret0, _ := ret[0].(error)
