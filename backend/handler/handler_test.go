@@ -432,6 +432,11 @@ func TestSearchItems(t *testing.T) {
 						UpdatedAt:   "",
 					},
 				}, nil).Times(1)
+				m.EXPECT().GetCategories(gomock.Any()).Return([]domain.Category{
+					{ID: 1, Name: "food"},
+					{ID: 2, Name: "fashion"},
+					{ID: 3, Name: "furniture"},
+				}, nil).Times(1)
 			},
 			wantStatusCode: http.StatusOK,
 		},
@@ -439,6 +444,11 @@ func TestSearchItems(t *testing.T) {
 			url: "/search?name=ok",
 			injectorForItemRepo: func(m *db.MockItemRepository) {
 				m.EXPECT().SearchItemsByWord(gomock.Any(), "ok").Return([]domain.Item{}, nil).Times(1)
+				m.EXPECT().GetCategories(gomock.Any()).Return([]domain.Category{
+					{ID: 1, Name: "food"},
+					{ID: 2, Name: "fashion"},
+					{ID: 3, Name: "furniture"},
+				}, nil).Times(1)
 			},
 			wantStatusCode: http.StatusOK,
 		},
