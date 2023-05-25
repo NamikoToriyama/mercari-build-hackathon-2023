@@ -58,6 +58,7 @@ type ItemRepository interface {
 	GetCategory(ctx context.Context, id int64) (domain.Category, error)
 	GetCategories(ctx context.Context) ([]domain.Category, error)
 	UpdateItemStatus(ctx context.Context, id int64, status domain.ItemStatus) error
+	SearchItemsByWord(ctx context.Context, word string) ([]domain.Item, error)
 }
 
 type ItemDBRepository struct {
@@ -180,4 +181,30 @@ func (r *ItemDBRepository) GetCategories(ctx context.Context) ([]domain.Category
 		return nil, err
 	}
 	return cats, nil
+}
+
+func (r *ItemDBRepository) SearchItemsByWord(ctx context.Context, word string) ([]domain.Item, error) {
+	rows, err := r.QueryContext(ctx, "SELECT * FROM items WHERE name like ?", "%"+word+"%")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("failed rows.Close: %s", err.Error())
+		}
+	}()
+
+	var items []domain.Item
+	for rows.Next() {
+		var item domain.Item
+		if err := rows.Scan(&item.ID, &item.Name, &item.Price, &item.Description, &item.CategoryID, &item.UserID, &item.Image, &item.Status, &item.CreatedAt, &item.UpdatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return items, nil
 }

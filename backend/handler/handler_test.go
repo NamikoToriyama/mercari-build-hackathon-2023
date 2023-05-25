@@ -395,3 +395,104 @@ func TestPostPurchase(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchItems(t *testing.T) {
+	t.Parallel()
+	cases := map[string]struct {
+		url                 string
+		injectorForItemRepo func(*db.MockItemRepository)
+		wantStatusCode      int
+	}{
+		"200: correctly got items": {
+			url: "/search?name=item",
+			injectorForItemRepo: func(m *db.MockItemRepository) {
+				m.EXPECT().SearchItemsByWord(gomock.Any(), "item").Return([]domain.Item{
+					{
+						ID:          1,
+						Name:        "item1",
+						Price:       0,
+						Description: "",
+						CategoryID:  0,
+						UserID:      0,
+						Image:       []byte{},
+						Status:      0,
+						CreatedAt:   "",
+						UpdatedAt:   "",
+					},
+					{
+						ID:          3,
+						Name:        "apple_item",
+						Price:       0,
+						Description: "",
+						CategoryID:  0,
+						UserID:      0,
+						Image:       []byte{},
+						Status:      0,
+						CreatedAt:   "",
+						UpdatedAt:   "",
+					},
+				}, nil).Times(1)
+			},
+			wantStatusCode: http.StatusOK,
+		},
+		"200: no items": {
+			url: "/search?name=ok",
+			injectorForItemRepo: func(m *db.MockItemRepository) {
+				m.EXPECT().SearchItemsByWord(gomock.Any(), "ok").Return([]domain.Item{
+					{},
+				}, nil).Times(1)
+			},
+			wantStatusCode: http.StatusOK,
+		},
+		"400: failed because of no params": {
+			url: "/search?",
+			injectorForItemRepo: func(m *db.MockItemRepository) {
+				m.EXPECT().SearchItemsByWord(gomock.Any(), "ok").Return([]domain.Item{
+					{},
+				}, nil).Times(0)
+			},
+			wantStatusCode: http.StatusBadRequest,
+		},
+		"500: internal server error": {
+			url: "/search?name=error",
+			injectorForItemRepo: func(m *db.MockItemRepository) {
+				m.EXPECT().SearchItemsByWord(gomock.Any(), "error").Return(nil, errors.New("server error")).Times(1)
+			},
+			wantStatusCode: http.StatusInternalServerError,
+		},
+	}
+
+	for name, tt := range cases {
+		tt := tt
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+
+			// ready gomock
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			itemRepo := db.NewMockItemRepository(ctrl)
+			tt.injectorForItemRepo(itemRepo)
+
+			// test handler
+			h := handler.Handler{ItemRepo: itemRepo}
+			if err := h.SearchItems(c); err != nil {
+				echoErr, ok := err.(*echo.HTTPError)
+				if !ok {
+					t.Fatalf("unexpected error: %s", err.Error())
+				}
+				if tt.wantStatusCode != echoErr.Code {
+					t.Fatalf("unexpected status code: want: %d, got: %d", tt.wantStatusCode, rec.Code)
+				}
+				if echoErr.Code != http.StatusOK {
+					return
+				}
+			}
+		})
+	}
+}

@@ -25,7 +25,7 @@ $ curl -X POST 'http://127.0.0.1:9000/initialize'
 | List of items                      | `GET /items`                     | The benchmarker ensures that at least 12 items are returned if exist.                                                   |
 | Item detail                        | `GET /items/:itemID`             |                                                                                                                         |
 | Item image                         | `GET /items/:itemID/image`       | Don't change image. Benchmarker will send images up to 1MB in size.                                                     |
-| Search item by name *unimplemented | `GET /search?name=<search word>` | Response item have to Include search word <br>The benchmarker ensures that at least 12 items are returned if exist.     |
+| Search item by name                | `GET /search?name=<search word>` | Response item have to Include search word <br>The benchmarker ensures that at least 12 items are returned if exist.     |
 | Get balance                        | `GET /balance`                   |                                                                                                                         |
 | Add balance                        | `POST /balance`                  |                                                                                                                         |
 | User listed item                   | `/users/:userID/items`           | Sort by created time                                                                                                    |

@@ -410,6 +410,23 @@ func (h *Handler) GetImage(c echo.Context) error {
 	return c.Blob(http.StatusOK, "image/jpeg", data)
 }
 
+func (h *Handler) SearchItems(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// get search word
+	searchWord := c.Request().URL.Query().Get("name")
+	if searchWord == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "please specified search word")
+	}
+
+	data, err := h.ItemRepo.SearchItemsByWord(ctx, searchWord)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, data)
+}
+
 func (h *Handler) AddBalance(c echo.Context) error {
 	ctx := c.Request().Context()
 
