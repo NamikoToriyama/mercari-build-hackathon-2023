@@ -1,11 +1,8 @@
 package handler
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -211,20 +208,21 @@ func (h *Handler) AddItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	imageByte, err := getImageByte(c)
+	file, err := c.FormFile("image")
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return err
 	}
 
+	// TODO: fix argument
 	item, err := h.ItemRepo.AddItem(c.Request().Context(), domain.Item{
 		Name:        req.Name,
 		CategoryID:  req.CategoryID,
 		UserID:      userID,
 		Price:       req.Price,
 		Description: req.Description,
-		Image:       imageByte,
+		Image:       nil,
 		Status:      domain.ItemStatusInitial,
-	})
+	}, file)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -258,50 +256,25 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	imageByte, err := getImageByte(c)
+	file, err := c.FormFile("image")
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return err
 	}
 
+	// TODO: fix argument
 	item, err := h.ItemRepo.UpdateItem(c.Request().Context(), domain.Item{
 		ID:          itemID,
 		Name:        req.Name,
 		CategoryID:  req.CategoryID,
 		Price:       req.Price,
 		Description: req.Description,
-		Image:       imageByte,
-	})
+		Image:       nil,
+	}, file)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, item.ConvertToGetItemResponse())
-}
-
-func getImageByte(c echo.Context) ([]byte, error) {
-	file, err := c.FormFile("image")
-	if err != nil {
-		return nil, err
-	}
-
-	src, err := file.Open()
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := src.Close(); err != nil {
-			log.Printf("failed src.Close: %s", err.Error())
-		}
-	}()
-
-	var dest []byte
-	blob := bytes.NewBuffer(dest)
-	// TODO: pass very big file
-	// http.StatusBadRequest(400)
-	if _, err := io.Copy(blob, src); err != nil {
-		return nil, err
-	}
-	return blob.Bytes(), nil
 }
 
 func (h *Handler) Sell(c echo.Context) error {
@@ -334,10 +307,8 @@ func (h *Handler) GetOnSaleItems(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	items, err := h.ItemRepo.GetOnSaleItems(ctx)
-	// TODO: not found handling
-	// http.StatusNotFound(404)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 
 	var res []getOnSaleItemsResponse
@@ -424,6 +395,7 @@ func (h *Handler) GetCategories(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
+// TODO: refactor
 func (h *Handler) GetImage(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -434,7 +406,7 @@ func (h *Handler) GetImage(c echo.Context) error {
 
 	data, err := h.ItemRepo.GetItemImage(ctx, itemID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusNotFound, err)
 	}
 
 	return c.Blob(http.StatusOK, "image/jpeg", data)

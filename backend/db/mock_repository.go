@@ -6,6 +6,7 @@ package db
 
 import (
 	context "context"
+	multipart "mime/multipart"
 	reflect "reflect"
 
 	domain "github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/domain"
@@ -103,18 +104,32 @@ func (m *MockItemRepository) EXPECT() *MockItemRepositoryMockRecorder {
 }
 
 // AddItem mocks base method.
-func (m *MockItemRepository) AddItem(ctx context.Context, item domain.Item) (domain.Item, error) {
+func (m *MockItemRepository) AddItem(ctx context.Context, item domain.Item, file *multipart.FileHeader) (domain.Item, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddItem", ctx, item)
+	ret := m.ctrl.Call(m, "AddItem", ctx, item, file)
 	ret0, _ := ret[0].(domain.Item)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddItem indicates an expected call of AddItem.
-func (mr *MockItemRepositoryMockRecorder) AddItem(ctx, item interface{}) *gomock.Call {
+func (mr *MockItemRepositoryMockRecorder) AddItem(ctx, item, file interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddItem", reflect.TypeOf((*MockItemRepository)(nil).AddItem), ctx, item)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddItem", reflect.TypeOf((*MockItemRepository)(nil).AddItem), ctx, item, file)
+}
+
+// DeleteItems mocks base method.
+func (m *MockItemRepository) DeleteItems(ctx context.Context, item_id int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteItems", ctx, item_id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteItems indicates an expected call of DeleteItems.
+func (mr *MockItemRepositoryMockRecorder) DeleteItems(ctx, item_id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteItems", reflect.TypeOf((*MockItemRepository)(nil).DeleteItems), ctx, item_id)
 }
 
 // GetCategories mocks base method.
@@ -223,18 +238,18 @@ func (mr *MockItemRepositoryMockRecorder) SearchItemsByWord(ctx, word interface{
 }
 
 // UpdateItem mocks base method.
-func (m *MockItemRepository) UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error) {
+func (m *MockItemRepository) UpdateItem(ctx context.Context, item domain.Item, file *multipart.FileHeader) (domain.Item, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateItem", ctx, item)
+	ret := m.ctrl.Call(m, "UpdateItem", ctx, item, file)
 	ret0, _ := ret[0].(domain.Item)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateItem indicates an expected call of UpdateItem.
-func (mr *MockItemRepositoryMockRecorder) UpdateItem(ctx, item interface{}) *gomock.Call {
+func (mr *MockItemRepositoryMockRecorder) UpdateItem(ctx, item, file interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItem", reflect.TypeOf((*MockItemRepository)(nil).UpdateItem), ctx, item)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItem", reflect.TypeOf((*MockItemRepository)(nil).UpdateItem), ctx, item, file)
 }
 
 // UpdateItemStatus mocks base method.
