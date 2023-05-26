@@ -164,7 +164,7 @@ func (r *ItemDBRepository) GetItem(ctx context.Context, id int64) (domain.Item, 
 }
 
 func (r *ItemDBRepository) GetItemImage(ctx context.Context, id int64) ([]byte, error) {
-	f, err := os.OpenFile(FILE_DIR+strconv.FormatInt(id, 10)+".jpg", os.O_RDWR, 0755)
+	f, err := os.OpenFile(FILE_DIR+strconv.FormatInt(id, 10)+".jpg", os.O_RDONLY, 0400)
 	if err != nil {
 		return nil, err
 	}
