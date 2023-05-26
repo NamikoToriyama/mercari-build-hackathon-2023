@@ -427,7 +427,6 @@ func (h *Handler) GetCategories(c echo.Context) error {
 	return c.JSON(http.StatusOK, res)
 }
 
-// TODO: refactor
 func (h *Handler) GetImage(c echo.Context) error {
 	ctx := c.Request().Context()
 

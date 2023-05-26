@@ -164,10 +164,15 @@ func (r *ItemDBRepository) GetItem(ctx context.Context, id int64) (domain.Item, 
 }
 
 func (r *ItemDBRepository) GetItemImage(ctx context.Context, id int64) ([]byte, error) {
-	f, err := os.Open(FILE_DIR + strconv.FormatInt(id, 10) + ".jpg")
+	f, err := os.OpenFile(FILE_DIR+strconv.FormatInt(id, 10)+".jpg", os.O_RDWR, 0755)
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Printf("failed file close: %s", err.Error())
+		}
+	}()
 
 	var dest []byte
 	blob := bytes.NewBuffer(dest)
