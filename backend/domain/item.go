@@ -37,25 +37,12 @@ type Category struct {
 	Name string
 }
 
-/*
-$ head -6 10_data.sql
-BEGIN TRANSACTION;
-
-INSERT INTO "category" VALUES(1,'food');
-INSERT INTO "category" VALUES(2,'fashion');
-INSERT INTO "category" VALUES(3,'furniture');
-*/
-var (
-	categories = []Category{{1, "food"}, {2, "fashion"}, {3, "furniture"}}
-)
-
 func (i *Item) ConvertToGetItemResponse() GetItemResponse {
-	// TODO: validation
 	return GetItemResponse{
 		ID:           i.ID,
 		Name:         i.Name,
 		CategoryID:   i.CategoryID,
-		CategoryName: categories[i.CategoryID-1].Name,
+		CategoryName: "", // return empty for now
 		UserID:       i.UserID,
 		Price:        i.Price,
 		Description:  i.Description,
