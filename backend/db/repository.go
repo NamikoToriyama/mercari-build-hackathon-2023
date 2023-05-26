@@ -96,7 +96,10 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item, file *
 
 	err = saveImageLocal(res.ID, file)
 	if err != nil {
-		r.DeleteItems(ctx, res.ID)
+		deleteErr := r.DeleteItems(ctx, res.ID)
+		if deleteErr != nil {
+			return domain.Item{}, deleteErr
+		}
 		return domain.Item{}, err
 	}
 
@@ -132,9 +135,15 @@ func saveImageLocal(id int64, file *multipart.FileHeader) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			log.Printf("failed out.Close: %s", err.Error())
+		}
+	}()
 
-	io.Copy(out, blob)
+	if _, err := io.Copy(out, blob); err != nil {
+		return err
+	}
 
 	return nil
 }
