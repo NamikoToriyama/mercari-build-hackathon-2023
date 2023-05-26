@@ -242,7 +242,7 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 
 	req := new(itemRequest)
 	if err := c.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("itemRequest c.Bind() error"))
 	}
 
 	_, err = getUserID(c)
@@ -255,12 +255,12 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 		if err == sql.ErrNoRows {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid categoryID")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusInternalServerError, errors.New("GetCategory() error"))
 	}
 
 	imageByte, err := getImageByte(c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		return echo.NewHTTPError(http.StatusBadRequest, errors.New("getImageByte error"))
 	}
 
 	item, err := h.ItemRepo.UpdateItem(c.Request().Context(), domain.Item{
@@ -281,7 +281,8 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 func getImageByte(c echo.Context) ([]byte, error) {
 	file, err := c.FormFile("image")
 	if err != nil {
-		return nil, err
+		log.Printf("not found form file: %s", err.Error())
+		return nil, nil
 	}
 
 	src, err := file.Open()
@@ -290,7 +291,7 @@ func getImageByte(c echo.Context) ([]byte, error) {
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
-			log.Printf("failed src.Close: %s", err.Error())
+			log.Fatalf("failed src.Close: %s", err.Error())
 		}
 	}()
 

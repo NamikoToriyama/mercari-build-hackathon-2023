@@ -137,9 +137,11 @@ func (r *ItemDBRepository) UpdateItem(ctx context.Context, item domain.Item) (do
 	}
 
 	// Update images
-	err := saveImageLocal(item.ID, item.Image)
-	if err != nil {
-		return domain.Item{}, err
+	if item.Image != nil {
+		err := saveImageLocal(item.ID, item.Image)
+		if err != nil {
+			return domain.Item{}, err
+		}
 	}
 
 	return r.GetItem(ctx, item.ID)
