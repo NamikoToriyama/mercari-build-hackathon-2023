@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"mime/multipart"
 	"os"
 	"strconv"
 	"sync"
@@ -59,9 +58,9 @@ func (r *UserDBRepository) UpdateBalance(ctx context.Context, id int64, balance 
 }
 
 type ItemRepository interface {
-	AddItem(ctx context.Context, item domain.Item, file *multipart.FileHeader) (domain.Item, error)
+	AddItem(ctx context.Context, item domain.Item) (domain.Item, error)
 	DeleteItems(ctx context.Context, item_id int64) error
-	UpdateItem(ctx context.Context, item domain.Item, file *multipart.FileHeader) (domain.Item, error)
+	UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error)
 	GetItem(ctx context.Context, id int64) (domain.Item, error)
 	GetItemImage(ctx context.Context, id int64) ([]byte, error)
 	GetOnSaleItems(ctx context.Context) ([]domain.Item, error)
@@ -80,8 +79,8 @@ func NewItemRepository(db *sql.DB) ItemRepository {
 	return &ItemDBRepository{DB: db}
 }
 
-func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item, file *multipart.FileHeader) (domain.Item, error) {
-	if _, err := r.ExecContext(ctx, "INSERT INTO items (name, price, description, category_id, seller_id, image, status) VALUES (?, ?, ?, ?, ?, ?, ?)", item.Name, item.Price, item.Description, item.CategoryID, item.UserID, item.Image, item.Status); err != nil {
+func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item) (domain.Item, error) {
+	if _, err := r.ExecContext(ctx, "INSERT INTO items (name, price, description, category_id, seller_id, image, status) VALUES (?, ?, ?, ?, ?, ?, ?)", item.Name, item.Price, item.Description, item.CategoryID, item.UserID, nil, item.Status); err != nil {
 		return domain.Item{}, err
 	}
 	// TODO: if other insert query is executed at the same time, it might return wrong id
@@ -94,7 +93,7 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item, file *
 		return domain.Item{}, err
 	}
 
-	err = saveImageLocal(res.ID, file)
+	err = saveImageLocal(res.ID, item.Image)
 	if err != nil {
 		deleteErr := r.DeleteItems(ctx, res.ID)
 		if deleteErr != nil {
@@ -113,24 +112,7 @@ func (r *ItemDBRepository) DeleteItems(ctx context.Context, item_id int64) error
 	return nil
 }
 
-func saveImageLocal(id int64, file *multipart.FileHeader) error {
-	src, err := file.Open()
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if err := src.Close(); err != nil {
-			log.Printf("failed src.Close: %s", err.Error())
-		}
-	}()
-
-	var dest []byte
-	blob := bytes.NewBuffer(dest)
-	if _, err := io.Copy(blob, src); err != nil {
-		return err
-	}
-
+func saveImageLocal(id int64, file []byte) error {
 	out, err := os.Create(FILE_DIR + strconv.FormatInt(id, 10) + ".jpg")
 	if err != nil {
 		return err
@@ -141,20 +123,21 @@ func saveImageLocal(id int64, file *multipart.FileHeader) error {
 		}
 	}()
 
-	if _, err := io.Copy(out, blob); err != nil {
+	reader := bytes.NewReader(file)
+	if _, err := io.Copy(out, reader); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (r *ItemDBRepository) UpdateItem(ctx context.Context, item domain.Item, file *multipart.FileHeader) (domain.Item, error) {
+func (r *ItemDBRepository) UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error) {
 	if _, err := r.ExecContext(ctx, "UPDATE items SET name = ?, category_id = ?, price = ?, description = ? WHERE id = ?", item.Name, item.CategoryID, item.Price, item.Description, item.ID); err != nil {
 		return domain.Item{}, err
 	}
 
 	// Update images
-	err := saveImageLocal(item.ID, file)
+	err := saveImageLocal(item.ID, item.Image)
 	if err != nil {
 		return domain.Item{}, err
 	}

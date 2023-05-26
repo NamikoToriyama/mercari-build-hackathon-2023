@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -208,21 +211,20 @@ func (h *Handler) AddItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	file, err := c.FormFile("image")
+	imageByte, err := getImageByte(c)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	// TODO: fix argument
 	item, err := h.ItemRepo.AddItem(c.Request().Context(), domain.Item{
 		Name:        req.Name,
 		CategoryID:  req.CategoryID,
 		UserID:      userID,
 		Price:       req.Price,
 		Description: req.Description,
-		Image:       nil,
+		Image:       imageByte,
 		Status:      domain.ItemStatusInitial,
-	}, file)
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
@@ -256,25 +258,49 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	file, err := c.FormFile("image")
+	imageByte, err := getImageByte(c)
 	if err != nil {
-		return err
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
-	// TODO: fix argument
 	item, err := h.ItemRepo.UpdateItem(c.Request().Context(), domain.Item{
 		ID:          itemID,
 		Name:        req.Name,
 		CategoryID:  req.CategoryID,
 		Price:       req.Price,
 		Description: req.Description,
-		Image:       nil,
-	}, file)
+		Image:       imageByte,
+	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
 	return c.JSON(http.StatusOK, item.ConvertToGetItemResponse())
+}
+
+func getImageByte(c echo.Context) ([]byte, error) {
+	file, err := c.FormFile("image")
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := file.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := src.Close(); err != nil {
+			log.Printf("failed src.Close: %s", err.Error())
+		}
+	}()
+
+	var dest []byte
+	blob := bytes.NewBuffer(dest)
+
+	if _, err := io.Copy(blob, src); err != nil {
+		return nil, err
+	}
+	return blob.Bytes(), nil
 }
 
 func (h *Handler) Sell(c echo.Context) error {
