@@ -371,7 +371,12 @@ func (h *Handler) GetItem(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	category, err := h.ItemRepo.GetCategory(ctx, item.CategoryID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
 	res := item.ConvertToGetItemResponse()
+	res.CategoryName = category.Name
 	return c.JSON(http.StatusOK, res)
 }
 
@@ -392,15 +397,16 @@ func (h *Handler) GetUserItems(c echo.Context) error {
 
 	var res []getUserItemsResponse
 	for _, item := range items {
-		cats, err := h.ItemRepo.GetCategories(ctx)
+		cat, err := h.ItemRepo.GetCategory(ctx, item.CategoryID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err)
 		}
-		for _, cat := range cats {
-			if cat.ID == item.CategoryID {
-				res = append(res, getUserItemsResponse{ID: item.ID, Name: item.Name, Price: item.Price, CategoryName: cat.Name})
-			}
-		}
+		res = append(res, getUserItemsResponse{
+			ID:           item.ID,
+			Name:         item.Name,
+			Price:        item.Price,
+			CategoryName: cat.Name,
+		})
 	}
 
 	return c.JSON(http.StatusOK, res)
@@ -454,9 +460,18 @@ func (h *Handler) SearchItems(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
+	categories, err := h.ItemRepo.GetCategories(ctx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err)
+	}
 	res := make([]domain.GetItemResponse, len(items))
 	for i, item := range items {
 		res[i] = item.ConvertToGetItemResponse()
+		// TODO: refactor here...
+		if !(0 <= res[i].CategoryID && res[i].CategoryID <= int64(len(categories))) {
+			return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("invalid category ID: %d", res[i].CategoryID))
+		}
+		res[i].CategoryName = categories[res[i].CategoryID-1].Name
 	}
 
 	return c.JSON(http.StatusOK, res)

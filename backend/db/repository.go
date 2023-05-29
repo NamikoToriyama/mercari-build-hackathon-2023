@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/NamikoToriyama/mecari-build-hackathon-2023/backend/domain"
 )
@@ -77,7 +78,8 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item) (domai
 	}
 	// TODO: if other insert query is executed at the same time, it might return wrong id
 	// http.StatusConflict(409) 既に同じIDがあった場合
-	row := r.QueryRowContext(ctx, "SELECT * FROM items WHERE rowid = LAST_INSERT_ROWID()")
+	// row := r.QueryRowContext(ctx, "SELECT * FROM items WHERE rowid = LAST_INSERT_ROWID()")
+	row := r.QueryRowContext(ctx, "SELECT * FROM items WHERE name=? AND price=? ORDER BY rowid DESC LIMIT 1", item.Name, item.Price)
 
 	var res domain.Item
 	return res, row.Scan(&res.ID, &res.Name, &res.Price, &res.Description, &res.CategoryID, &res.UserID, &res.Image, &res.Status, &res.CreatedAt, &res.UpdatedAt)
@@ -162,36 +164,37 @@ func (r *ItemDBRepository) UpdateItemStatus(ctx context.Context, id int64, statu
 	return nil
 }
 
-func (r *ItemDBRepository) GetCategory(ctx context.Context, id int64) (domain.Category, error) {
-	row := r.QueryRowContext(ctx, "SELECT * FROM category WHERE id = ?", id)
+/*
+$ head -6 10_data.sql
+BEGIN TRANSACTION;
 
-	var cat domain.Category
-	return cat, row.Scan(&cat.ID, &cat.Name)
+INSERT INTO "category" VALUES(1,'food');
+INSERT INTO "category" VALUES(2,'fashion');
+INSERT INTO "category" VALUES(3,'furniture');
+*/
+var (
+	categories = []domain.Category{
+		{ID: 1, Name: "food"},
+		{ID: 2, Name: "fashion"},
+		{ID: 3, Name: "furniture"},
+	}
+	categoryMu sync.RWMutex
+)
+
+func (r *ItemDBRepository) GetCategory(ctx context.Context, id int64) (domain.Category, error) {
+	if !(1 <= id && id <= int64(len(categories))) {
+		return domain.Category{}, fmt.Errorf("invalid category ID: %d", id)
+	}
+
+	categoryMu.RLock()
+	defer categoryMu.RUnlock()
+	return categories[id-1], nil
 }
 
 func (r *ItemDBRepository) GetCategories(ctx context.Context) ([]domain.Category, error) {
-	rows, err := r.QueryContext(ctx, "SELECT * FROM category")
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			log.Printf("failed rows.Close: %s", err.Error())
-		}
-	}()
-
-	var cats []domain.Category
-	for rows.Next() {
-		var cat domain.Category
-		if err := rows.Scan(&cat.ID, &cat.Name); err != nil {
-			return nil, err
-		}
-		cats = append(cats, cat)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return cats, nil
+	categoryMu.RLock()
+	defer categoryMu.RUnlock()
+	return categories, nil
 }
 
 func (r *ItemDBRepository) SearchItemsByWord(ctx context.Context, word string) ([]domain.Item, error) {
