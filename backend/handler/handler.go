@@ -242,7 +242,7 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 
 	req := new(itemRequest)
 	if err := c.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.New("itemRequest c.Bind() error"))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("itemRequest c.Bind() error: %v", err))
 	}
 
 	_, err = getUserID(c)
@@ -255,12 +255,12 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 		if err == sql.ErrNoRows {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid categoryID")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, errors.New("GetCategory() error"))
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Errorf("GetCategory() error: %v", err))
 	}
 
 	imageByte, err := getImageByte(c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errors.New("getImageByte error"))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Errorf("getImageByte error: %v", err))
 	}
 
 	item, err := h.ItemRepo.UpdateItem(c.Request().Context(), domain.Item{

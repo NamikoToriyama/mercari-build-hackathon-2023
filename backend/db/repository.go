@@ -113,6 +113,9 @@ func (r *ItemDBRepository) DeleteItems(ctx context.Context, item_id int64) error
 }
 
 func saveImageLocal(id int64, file []byte) error {
+	if file == nil {
+		return fmt.Errorf("file is not specidied")
+	}
 	out, err := os.Create(FILE_DIR + strconv.FormatInt(id, 10) + ".jpg")
 	if err != nil {
 		return err
@@ -136,12 +139,9 @@ func (r *ItemDBRepository) UpdateItem(ctx context.Context, item domain.Item) (do
 		return domain.Item{}, err
 	}
 
-	// Update images
-	if item.Image != nil {
-		err := saveImageLocal(item.ID, item.Image)
-		if err != nil {
-			return domain.Item{}, err
-		}
+	err := saveImageLocal(item.ID, item.Image)
+	if err != nil {
+		return domain.Item{}, err
 	}
 
 	return r.GetItem(ctx, item.ID)
