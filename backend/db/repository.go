@@ -155,7 +155,6 @@ func (r *ItemDBRepository) GetItemsByUserID(ctx context.Context, userID int64) (
 }
 
 func (r *ItemDBRepository) UpdateItemStatus(ctx context.Context, id int64, status domain.ItemStatus) error {
-	fmt.Print("hogehogehoge")
 	if _, err := r.ExecContext(ctx, "UPDATE items SET status = ? WHERE id = ?", status, id); err != nil {
 		return err
 	}
