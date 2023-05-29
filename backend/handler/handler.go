@@ -213,7 +213,7 @@ func (h *Handler) AddItem(c echo.Context) error {
 
 	imageByte, err := getImageByte(c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	item, err := h.ItemRepo.AddItem(c.Request().Context(), domain.Item{
@@ -237,7 +237,7 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 
 	itemID, err := strconv.ParseInt(c.Param("itemID"), 10, 64)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	req := new(itemRequest)
@@ -260,7 +260,7 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 
 	imageByte, err := getImageByte(c)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err)
+		return echo.NewHTTPError(http.StatusBadRequest, err)
 	}
 
 	item, err := h.ItemRepo.UpdateItem(c.Request().Context(), domain.Item{

@@ -76,9 +76,7 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item) (domai
 	if _, err := r.ExecContext(ctx, "INSERT INTO items (name, price, description, category_id, seller_id, image, status) VALUES (?, ?, ?, ?, ?, ?, ?)", item.Name, item.Price, item.Description, item.CategoryID, item.UserID, item.Image, item.Status); err != nil {
 		return domain.Item{}, err
 	}
-	// TODO: if other insert query is executed at the same time, it might return wrong id
-	// http.StatusConflict(409) 既に同じIDがあった場合
-	// row := r.QueryRowContext(ctx, "SELECT * FROM items WHERE rowid = LAST_INSERT_ROWID()")
+
 	row := r.QueryRowContext(ctx, "SELECT * FROM items WHERE name=? AND price=? ORDER BY rowid DESC LIMIT 1", item.Name, item.Price)
 
 	var res domain.Item
@@ -86,7 +84,7 @@ func (r *ItemDBRepository) AddItem(ctx context.Context, item domain.Item) (domai
 }
 
 func (r *ItemDBRepository) UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error) {
-	if _, err := r.ExecContext(ctx, "UPDATE items SET name = ?  WHERE id = ?", item.Name, item.ID); err != nil {
+	if _, err := r.ExecContext(ctx, "UPDATE items SET name = ?, category_id = ?, price = ?, description = ? WHERE id = ?", item.Name, item.CategoryID, item.Price, item.Description, item.ID); err != nil {
 		return domain.Item{}, err
 	}
 
