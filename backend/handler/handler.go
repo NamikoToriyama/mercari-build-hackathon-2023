@@ -281,8 +281,8 @@ func (h *Handler) UpdateItem(c echo.Context) error {
 func getImageByte(c echo.Context) ([]byte, error) {
 	file, err := c.FormFile("image")
 	if err != nil {
-		log.Printf("not found form file: %s", err.Error())
-		return nil, nil
+		log.Printf("file not found: %s", err.Error())
+		return nil, err
 	}
 
 	src, err := file.Open()
@@ -291,7 +291,7 @@ func getImageByte(c echo.Context) ([]byte, error) {
 	}
 	defer func() {
 		if err := src.Close(); err != nil {
-			log.Fatalf("failed src.Close: %s", err.Error())
+			log.Printf("failed src.Close: %s", err.Error())
 		}
 	}()
 
