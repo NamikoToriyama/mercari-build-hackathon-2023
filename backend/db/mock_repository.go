@@ -117,6 +117,20 @@ func (mr *MockItemRepositoryMockRecorder) AddItem(ctx, item interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddItem", reflect.TypeOf((*MockItemRepository)(nil).AddItem), ctx, item)
 }
 
+// DeleteItems mocks base method.
+func (m *MockItemRepository) DeleteItems(ctx context.Context, item_id int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteItems", ctx, item_id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteItems indicates an expected call of DeleteItems.
+func (mr *MockItemRepositoryMockRecorder) DeleteItems(ctx, item_id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteItems", reflect.TypeOf((*MockItemRepository)(nil).DeleteItems), ctx, item_id)
+}
+
 // GetCategories mocks base method.
 func (m *MockItemRepository) GetCategories(ctx context.Context) ([]domain.Category, error) {
 	m.ctrl.T.Helper()
@@ -220,6 +234,21 @@ func (m *MockItemRepository) SearchItemsByWord(ctx context.Context, word string)
 func (mr *MockItemRepositoryMockRecorder) SearchItemsByWord(ctx, word interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchItemsByWord", reflect.TypeOf((*MockItemRepository)(nil).SearchItemsByWord), ctx, word)
+}
+
+// UpdateItem mocks base method.
+func (m *MockItemRepository) UpdateItem(ctx context.Context, item domain.Item) (domain.Item, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateItem", ctx, item)
+	ret0, _ := ret[0].(domain.Item)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateItem indicates an expected call of UpdateItem.
+func (mr *MockItemRepositoryMockRecorder) UpdateItem(ctx, item interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateItem", reflect.TypeOf((*MockItemRepository)(nil).UpdateItem), ctx, item)
 }
 
 // UpdateItemStatus mocks base method.
